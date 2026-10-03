@@ -2,11 +2,20 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { HealthService } from "../src/services/health.service.js";
+import { AuthService } from "../src/services/auth.service.js";
 import { createLogger } from "../src/utils/logger.js";
 
 function createTestApp(ping: () => Promise<void>) {
   return createApp({
     healthService: new HealthService({ ping }),
+    authService: new AuthService({
+      async findByEmail() {
+        return null;
+      },
+      async createUser() {
+        throw new Error("not used");
+      },
+    }),
     logger: createLogger("silent"),
     corsOrigin: "http://localhost:3000",
   });

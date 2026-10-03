@@ -5,8 +5,18 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { connectMongo, disconnectMongo } from "../src/db/mongo.js";
 import { HealthRepository } from "../src/repositories/health.repository.js";
+import { AuthService } from "../src/services/auth.service.js";
 import { HealthService } from "../src/services/health.service.js";
 import { createLogger } from "../src/utils/logger.js";
+
+const unusedAuthService = new AuthService({
+  async findByEmail() {
+    return null;
+  },
+  async createUser() {
+    throw new Error("not used");
+  },
+});
 
 describe("GET /api/v1/health", () => {
   let memoryServer: MongoMemoryServer;
@@ -25,6 +35,7 @@ describe("GET /api/v1/health", () => {
   it("reports ok when MongoDB answers ping", async () => {
     const app = createApp({
       healthService: new HealthService(new HealthRepository(client)),
+      authService: unusedAuthService,
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });
@@ -44,6 +55,7 @@ describe("GET /api/v1/health", () => {
           throw new Error("connection refused");
         },
       }),
+      authService: unusedAuthService,
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

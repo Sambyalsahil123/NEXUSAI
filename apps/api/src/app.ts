@@ -5,11 +5,13 @@ import { notFound } from "./middleware/not-found.js";
 import { requestId } from "./middleware/request-id.js";
 import { applySecurity } from "./middleware/security.js";
 import { createApiRouter } from "./routes/index.js";
+import type { AuthService } from "./services/auth.service.js";
 import type { HealthService } from "./services/health.service.js";
 import type { Logger } from "./utils/logger.js";
 
 export type AppDependencies = {
   healthService: HealthService;
+  authService: AuthService;
   logger: Logger;
   corsOrigin: string;
 };
@@ -27,7 +29,7 @@ export function createApp(deps: AppDependencies): Express {
   applySecurity(app, deps.corsOrigin);
   app.use(express.json({ limit: "1mb" }));
 
-  app.use("/api/v1", createApiRouter(deps.healthService));
+  app.use("/api/v1", createApiRouter(deps.healthService, deps.authService));
 
   app.use(notFound);
   app.use(errorHandler(deps.logger));

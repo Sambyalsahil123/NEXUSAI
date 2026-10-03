@@ -6,6 +6,8 @@ import { parseEnv } from "./config/env.js";
 import { connectMongo, disconnectMongo } from "./db/mongo.js";
 import { ensureUserIndexes } from "./models/user.model.js";
 import { HealthRepository } from "./repositories/health.repository.js";
+import { UserRepository } from "./repositories/user.repository.js";
+import { AuthService } from "./services/auth.service.js";
 import { HealthService } from "./services/health.service.js";
 import { createLogger } from "./utils/logger.js";
 
@@ -27,8 +29,10 @@ async function main(): Promise<void> {
   logger.info("mongodb connected");
 
   const healthService = new HealthService(new HealthRepository(client));
+  const authService = new AuthService(new UserRepository(client.db()));
   const app = createApp({
     healthService,
+    authService,
     logger,
     corsOrigin: env.CORS_ORIGIN,
   });
