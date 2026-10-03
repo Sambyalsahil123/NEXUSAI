@@ -1,0 +1,15 @@
+{
+  "name": "nexusai",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @nexusai/api dev",
+    "start": "pnpm --filter @nexusai/api start",
+    "test": "pnpm --filter @nexusai/api test",
+    "typecheck": "pnpm --filter @nexusai/api typecheck",
+    "lint": "pnpm --filter @nexusai/api lint",
+    "build": "pnpm --filter @nexusai/api build"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

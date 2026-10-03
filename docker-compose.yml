@@ -1,0 +1,12 @@
+# Local development data store for the API.
+# Redis and Qdrant are added in the phases that actually use them.
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - nexusai_mongo:/data/db
+
+volumes:
+  nexusai_mongo:
