@@ -27,3 +27,4 @@ pnpm lint
 
 Tests use an in-memory MongoDB. Docker is only required when you run the API itself.
 # NEXUSAI
+# NEXUSAI
