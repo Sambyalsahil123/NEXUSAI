@@ -3,7 +3,7 @@ import { ErrorCodes } from "../errors/codes.js";
 import { normalizeUserEmail, type User } from "../models/user.model.js";
 import type { UserRepository } from "../repositories/user.repository.js";
 import type { RegisterBody, LoginBody } from "../validators/auth.validator.js";
-import { signAccessToken } from "../utils/access-token.js";
+import { signAccessToken, verifyAccessToken } from "../utils/access-token.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
 
 const MIN_JWT_SECRET_LENGTH = 32;
@@ -16,7 +16,14 @@ export type PublicUser = {
   createdAt: Date;
 };
 
-type UserStore = Pick<UserRepository, "findByEmail" | "createUser">;
+export type AuthenticatedUser = {
+  id: string;
+  email: string;
+  status: User["status"];
+  createdAt: Date;
+};
+
+type UserStore = Pick<UserRepository, "findByEmail" | "findById" | "createUser">;
 
 export type LoginResult = {
   user: PublicUser;
@@ -73,6 +80,27 @@ export class AuthService {
     };
   }
 
+  async authenticateAccessToken(token: string): Promise<AuthenticatedUser> {
+    let userId: string;
+    try {
+      userId = await verifyAccessToken(token, this.jwtSecret);
+    } catch {
+      throw invalidToken();
+    }
+
+    const user = await this.users.findById(userId);
+    if (!user || user.status !== "active") {
+      throw invalidToken();
+    }
+
+    return {
+      id: user._id.toHexString(),
+      email: user.email,
+      status: user.status,
+      createdAt: user.createdAt,
+    };
+  }
+
   private static getDummyPasswordHash(): Promise<string> {
     AuthService.dummyPasswordHash ??= hashPassword("dummy-password-not-a-user-secret");
     return AuthService.dummyPasswordHash;
@@ -95,6 +123,10 @@ function emailTaken(): AppError {
 
 function invalidCredentials(): AppError {
   return new AppError(ErrorCodes.UNAUTHORIZED, "Invalid email or password", 401);
+}
+
+function invalidToken(): AppError {
+  return new AppError(ErrorCodes.UNAUTHORIZED, "Invalid or expired token", 401);
 }
 
 function isDuplicateKeyError(error: unknown): boolean {

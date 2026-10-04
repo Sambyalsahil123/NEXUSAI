@@ -13,6 +13,9 @@ function createTestApp(ping: () => Promise<void>) {
         async findByEmail() {
           return null;
         },
+        async findById() {
+          return null;
+        },
         async createUser() {
           throw new Error("not used");
         },

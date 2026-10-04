@@ -8,6 +8,9 @@ describe("AuthService.register duplicate key", () => {
         async findByEmail() {
           return null;
         },
+        async findById() {
+          return null;
+        },
         async createUser() {
           throw Object.assign(new Error("E11000 duplicate key"), { code: 11000 });
         },

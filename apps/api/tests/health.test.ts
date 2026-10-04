@@ -14,6 +14,9 @@ const unusedAuthService = new AuthService(
     async findByEmail() {
       return null;
     },
+    async findById() {
+      return null;
+    },
     async createUser() {
       throw new Error("not used");
     },

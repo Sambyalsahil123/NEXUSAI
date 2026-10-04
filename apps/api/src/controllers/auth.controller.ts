@@ -27,5 +27,12 @@ export function createAuthController(authService: AuthService) {
       const result = await authService.login(body.data);
       sendSuccess(res, 200, result, getRequestId(req));
     },
+
+    async me(req: Request, res: Response): Promise<void> {
+      if (!req.user) {
+        throw new AppError(ErrorCodes.UNAUTHORIZED, "Authentication required", 401);
+      }
+      sendSuccess(res, 200, req.user, getRequestId(req));
+    },
   };
 }

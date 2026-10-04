@@ -13,6 +13,13 @@ export class UserRepository {
     return this.collection().findOne({ email });
   }
 
+  async findById(id: string): Promise<User | null> {
+    if (!ObjectId.isValid(id)) {
+      return null;
+    }
+    return this.collection().findOne({ _id: new ObjectId(id) });
+  }
+
   async createUser(input: NewUserInput): Promise<User> {
     const now = new Date();
     const document: User = {
