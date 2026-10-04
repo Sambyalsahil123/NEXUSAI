@@ -29,7 +29,7 @@ async function main(): Promise<void> {
   logger.info("mongodb connected");
 
   const healthService = new HealthService(new HealthRepository(client));
-  const authService = new AuthService(new UserRepository(client.db()));
+  const authService = new AuthService(new UserRepository(client.db()), env.JWT_SECRET);
   const app = createApp({
     healthService,
     authService,

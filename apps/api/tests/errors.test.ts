@@ -8,14 +8,17 @@ import { createLogger } from "../src/utils/logger.js";
 function createTestApp(ping: () => Promise<void>) {
   return createApp({
     healthService: new HealthService({ ping }),
-    authService: new AuthService({
-      async findByEmail() {
-        return null;
+    authService: new AuthService(
+      {
+        async findByEmail() {
+          return null;
+        },
+        async createUser() {
+          throw new Error("not used");
+        },
       },
-      async createUser() {
-        throw new Error("not used");
-      },
-    }),
+      "test-jwt-secret-that-is-32-characters-long",
+    ),
     logger: createLogger("silent"),
     corsOrigin: "http://localhost:3000",
   });

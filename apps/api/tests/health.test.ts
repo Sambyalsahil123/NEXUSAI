@@ -9,14 +9,17 @@ import { AuthService } from "../src/services/auth.service.js";
 import { HealthService } from "../src/services/health.service.js";
 import { createLogger } from "../src/utils/logger.js";
 
-const unusedAuthService = new AuthService({
-  async findByEmail() {
-    return null;
+const unusedAuthService = new AuthService(
+  {
+    async findByEmail() {
+      return null;
+    },
+    async createUser() {
+      throw new Error("not used");
+    },
   },
-  async createUser() {
-    throw new Error("not used");
-  },
-});
+  "test-jwt-secret-that-is-32-characters-long",
+);
 
 describe("GET /api/v1/health", () => {
   let memoryServer: MongoMemoryServer;

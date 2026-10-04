@@ -32,7 +32,10 @@ describe("POST /api/v1/auth/register", () => {
           return undefined;
         },
       }),
-      authService: new AuthService(new UserRepository(client.db())),
+      authService: new AuthService(
+        new UserRepository(client.db()),
+        "test-jwt-secret-that-is-32-characters-long",
+      ),
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

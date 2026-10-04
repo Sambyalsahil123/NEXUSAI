@@ -11,3 +11,10 @@ export const registerBodySchema = z.object({
 });
 
 export type RegisterBody = z.infer<typeof registerBodySchema>;
+
+export const loginBodySchema = z.object({
+  email: z.string().trim().pipe(z.email()),
+  password: z.string().min(1, "Password is required").max(128),
+});
+
+export type LoginBody = z.infer<typeof loginBodySchema>;

@@ -2,8 +2,11 @@ import { AppError } from "../errors/app-error.js";
 import { ErrorCodes } from "../errors/codes.js";
 import { normalizeUserEmail, type User } from "../models/user.model.js";
 import type { UserRepository } from "../repositories/user.repository.js";
-import type { RegisterBody } from "../validators/auth.validator.js";
-import { hashPassword } from "../utils/password.js";
+import type { RegisterBody, LoginBody } from "../validators/auth.validator.js";
+import { signAccessToken } from "../utils/access-token.js";
+import { hashPassword, verifyPassword } from "../utils/password.js";
+
+const MIN_JWT_SECRET_LENGTH = 32;
 
 export type PublicUser = {
   id: string;
@@ -15,8 +18,22 @@ export type PublicUser = {
 
 type UserStore = Pick<UserRepository, "findByEmail" | "createUser">;
 
+export type LoginResult = {
+  user: PublicUser;
+  accessToken: string;
+};
+
 export class AuthService {
-  constructor(private readonly users: UserStore) {}
+  private static dummyPasswordHash: Promise<string> | undefined;
+
+  constructor(
+    private readonly users: UserStore,
+    private readonly jwtSecret: string,
+  ) {
+    if (jwtSecret.length < MIN_JWT_SECRET_LENGTH) {
+      throw new Error("JWT_SECRET must be at least 32 characters");
+    }
+  }
 
   async register(input: RegisterBody): Promise<PublicUser> {
     const email = normalizeUserEmail(input.email);
@@ -37,6 +54,29 @@ export class AuthService {
       throw error;
     }
   }
+
+  async login(input: LoginBody): Promise<LoginResult> {
+    const email = normalizeUserEmail(input.email);
+    const [user, dummyHash] = await Promise.all([
+      this.users.findByEmail(email),
+      AuthService.getDummyPasswordHash(),
+    ]);
+    const passwordMatches = await verifyPassword(input.password, user?.passwordHash ?? dummyHash);
+
+    if (!user || !passwordMatches || user.status !== "active") {
+      throw invalidCredentials();
+    }
+
+    return {
+      user: toPublicUser(user),
+      accessToken: await signAccessToken(user._id.toHexString(), this.jwtSecret),
+    };
+  }
+
+  private static getDummyPasswordHash(): Promise<string> {
+    AuthService.dummyPasswordHash ??= hashPassword("dummy-password-not-a-user-secret");
+    return AuthService.dummyPasswordHash;
+  }
 }
 
 function toPublicUser(user: User): PublicUser {
@@ -51,6 +91,10 @@ function toPublicUser(user: User): PublicUser {
 
 function emailTaken(): AppError {
   return new AppError(ErrorCodes.CONFLICT, "An account with this email already exists", 409);
+}
+
+function invalidCredentials(): AppError {
+  return new AppError(ErrorCodes.UNAUTHORIZED, "Invalid email or password", 401);
 }
 
 function isDuplicateKeyError(error: unknown): boolean {
