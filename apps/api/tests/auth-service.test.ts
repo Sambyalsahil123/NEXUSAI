@@ -15,6 +15,23 @@ describe("AuthService.register duplicate key", () => {
           throw Object.assign(new Error("E11000 duplicate key"), { code: 11000 });
         },
       },
+      {
+        async issue() {
+          throw new Error("not used");
+        },
+        async claimActive() {
+          return null;
+        },
+        async findByRefreshToken() {
+          return null;
+        },
+        async revokeFamily() {
+          return undefined;
+        },
+        async revokeIfActive() {
+          return undefined;
+        },
+      },
       "test-jwt-secret-that-is-32-characters-long",
     );
 

@@ -18,3 +18,9 @@ export const loginBodySchema = z.object({
 });
 
 export type LoginBody = z.infer<typeof loginBodySchema>;
+
+export const refreshTokenBodySchema = z.object({
+  refreshToken: z.string().min(20).max(512),
+});
+
+export type RefreshTokenBody = z.infer<typeof refreshTokenBodySchema>;

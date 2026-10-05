@@ -21,6 +21,23 @@ const unusedAuthService = new AuthService(
       throw new Error("not used");
     },
   },
+  {
+    async issue() {
+      throw new Error("not used");
+    },
+    async claimActive() {
+      return null;
+    },
+    async findByRefreshToken() {
+      return null;
+    },
+    async revokeFamily() {
+      return undefined;
+    },
+    async revokeIfActive() {
+      return undefined;
+    },
+  },
   "test-jwt-secret-that-is-32-characters-long",
 );
 

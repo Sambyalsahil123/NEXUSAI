@@ -4,8 +4,10 @@ import type { MongoClient } from "mongodb";
 import { createApp } from "./app.js";
 import { parseEnv } from "./config/env.js";
 import { connectMongo, disconnectMongo } from "./db/mongo.js";
+import { ensureSessionIndexes } from "./models/session.model.js";
 import { ensureUserIndexes } from "./models/user.model.js";
 import { HealthRepository } from "./repositories/health.repository.js";
+import { SessionRepository } from "./repositories/session.repository.js";
 import { UserRepository } from "./repositories/user.repository.js";
 import { AuthService } from "./services/auth.service.js";
 import { HealthService } from "./services/health.service.js";
@@ -21,6 +23,7 @@ async function main(): Promise<void> {
   try {
     client = await connectMongo(env.MONGODB_URI);
     await ensureUserIndexes(client.db());
+    await ensureSessionIndexes(client.db());
   } catch (error) {
     logger.fatal({ err: error }, "failed to connect to MongoDB");
     process.exit(1);
@@ -28,8 +31,10 @@ async function main(): Promise<void> {
 
   logger.info("mongodb connected");
 
+  const users = new UserRepository(client.db());
+  const sessions = new SessionRepository(client.db());
   const healthService = new HealthService(new HealthRepository(client));
-  const authService = new AuthService(new UserRepository(client.db()), env.JWT_SECRET);
+  const authService = new AuthService(users, sessions, env.JWT_SECRET);
   const app = createApp({
     healthService,
     authService,

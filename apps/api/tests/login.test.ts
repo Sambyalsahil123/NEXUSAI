@@ -5,8 +5,10 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { connectMongo, disconnectMongo } from "../src/db/mongo.js";
+import { ensureSessionIndexes } from "../src/models/session.model.js";
 import { ensureUserIndexes } from "../src/models/user.model.js";
 import { UserRepository } from "../src/repositories/user.repository.js";
+import { SessionRepository } from "../src/repositories/session.repository.js";
 import { AuthService } from "../src/services/auth.service.js";
 import { HealthService } from "../src/services/health.service.js";
 import { createLogger } from "../src/utils/logger.js";
@@ -21,6 +23,7 @@ describe("POST /api/v1/auth/login", () => {
     memoryServer = await MongoMemoryServer.create();
     client = await connectMongo(memoryServer.getUri());
     await ensureUserIndexes(client.db());
+    await ensureSessionIndexes(client.db());
   }, 60_000);
 
   afterAll(async () => {
@@ -35,7 +38,7 @@ describe("POST /api/v1/auth/login", () => {
           return undefined;
         },
       }),
-      authService: new AuthService(new UserRepository(client.db()), JWT_SECRET),
+      authService: new AuthService(new UserRepository(client.db()), new SessionRepository(client.db()), JWT_SECRET),
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

@@ -3,7 +3,7 @@ import { createAuthController } from "../controllers/auth.controller.js";
 import { createRequireAuth } from "../middleware/auth.middleware.js";
 import { validate } from "../middleware/validate.js";
 import type { AuthService } from "../services/auth.service.js";
-import { loginBodySchema, registerBodySchema } from "../validators/auth.validator.js";
+import { loginBodySchema, refreshTokenBodySchema, registerBodySchema } from "../validators/auth.validator.js";
 
 export function createAuthRouter(authService: AuthService): Router {
   const router = Router();
@@ -16,6 +16,14 @@ export function createAuthRouter(authService: AuthService): Router {
 
   router.post("/login", validate({ body: loginBodySchema }), async (req, res) => {
     await controller.login(req, res);
+  });
+
+  router.post("/refresh", validate({ body: refreshTokenBodySchema }), async (req, res) => {
+    await controller.refresh(req, res);
+  });
+
+  router.post("/logout", validate({ body: refreshTokenBodySchema }), async (req, res) => {
+    await controller.logout(req, res);
   });
 
   router.get("/me", requireAuth, async (req, res) => {
