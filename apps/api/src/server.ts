@@ -4,6 +4,8 @@ import type { MongoClient } from "mongodb";
 import { createApp } from "./app.js";
 import { parseEnv } from "./config/env.js";
 import { connectMongo, disconnectMongo } from "./db/mongo.js";
+import { ensureMembershipIndexes } from "./models/membership.model.js";
+import { ensureOrganizationIndexes } from "./models/organization.model.js";
 import { ensureSessionIndexes } from "./models/session.model.js";
 import { ensureUserIndexes } from "./models/user.model.js";
 import { HealthRepository } from "./repositories/health.repository.js";
@@ -24,6 +26,8 @@ async function main(): Promise<void> {
     client = await connectMongo(env.MONGODB_URI);
     await ensureUserIndexes(client.db());
     await ensureSessionIndexes(client.db());
+    await ensureOrganizationIndexes(client.db());
+    await ensureMembershipIndexes(client.db());
   } catch (error) {
     logger.fatal({ err: error }, "failed to connect to MongoDB");
     process.exit(1);
