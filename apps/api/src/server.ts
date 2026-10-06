@@ -9,10 +9,13 @@ import { ensureOrganizationIndexes } from "./models/organization.model.js";
 import { ensureSessionIndexes } from "./models/session.model.js";
 import { ensureUserIndexes } from "./models/user.model.js";
 import { HealthRepository } from "./repositories/health.repository.js";
+import { MembershipRepository } from "./repositories/membership.repository.js";
+import { OrganizationRepository } from "./repositories/organization.repository.js";
 import { SessionRepository } from "./repositories/session.repository.js";
 import { UserRepository } from "./repositories/user.repository.js";
 import { AuthService } from "./services/auth.service.js";
 import { HealthService } from "./services/health.service.js";
+import { OrganizationService } from "./services/organization.service.js";
 import { createLogger } from "./utils/logger.js";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -39,9 +42,14 @@ async function main(): Promise<void> {
   const sessions = new SessionRepository(client.db());
   const healthService = new HealthService(new HealthRepository(client));
   const authService = new AuthService(users, sessions, env.JWT_SECRET);
+  const organizationService = new OrganizationService(
+    new OrganizationRepository(client.db()),
+    new MembershipRepository(client.db()),
+  );
   const app = createApp({
     healthService,
     authService,
+    organizationService,
     logger,
     corsOrigin: env.CORS_ORIGIN,
   });

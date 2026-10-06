@@ -59,6 +59,14 @@ describe("GET /api/v1/health", () => {
     const app = createApp({
       healthService: new HealthService(new HealthRepository(client)),
       authService: unusedAuthService,
+      organizationService: {
+        async create() {
+          throw new Error("not used");
+        },
+        async getUserOrganizations() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });
@@ -79,6 +87,14 @@ describe("GET /api/v1/health", () => {
         },
       }),
       authService: unusedAuthService,
+      organizationService: {
+        async create() {
+          throw new Error("not used");
+        },
+        async getUserOrganizations() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

@@ -22,6 +22,17 @@ export function normalizeOrganizationSlug(slug: string): string {
   return slug.trim().toLowerCase();
 }
 
+/** URL key derived from the display name. Uniqueness is enforced by the slug index. */
+export function slugFromOrganizationName(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return slug.slice(0, 80).replace(/-+$/g, "");
+}
+
 export async function ensureOrganizationIndexes(db: Db): Promise<void> {
   const organizations = db.collection<Organization>(ORGANIZATIONS_COLLECTION);
   const slug: IndexSpecification = { slug: 1 };

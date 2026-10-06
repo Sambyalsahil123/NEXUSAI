@@ -39,6 +39,14 @@ function createTestApp(ping: () => Promise<void>) {
       },
       "test-jwt-secret-that-is-32-characters-long",
     ),
+    organizationService: {
+      async create() {
+        throw new Error("not used");
+      },
+      async getUserOrganizations() {
+        throw new Error("not used");
+      },
+    },
     logger: createLogger("silent"),
     corsOrigin: "http://localhost:3000",
   });

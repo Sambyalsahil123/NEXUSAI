@@ -39,6 +39,14 @@ describe("GET /api/v1/auth/me", () => {
         },
       }),
       authService: new AuthService(new UserRepository(client.db()), new SessionRepository(client.db()), JWT_SECRET),
+      organizationService: {
+        async create() {
+          throw new Error("not used");
+        },
+        async getUserOrganizations() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });
