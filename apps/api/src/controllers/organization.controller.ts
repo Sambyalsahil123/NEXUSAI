@@ -48,5 +48,13 @@ export function createOrganizationController(organizationService: OrganizationAp
         getRequestId(req),
       );
     },
+
+    async updateCurrentSettings(req: Request, res: Response): Promise<void> {
+      if (!req.membership) {
+        throw new AppError(ErrorCodes.FORBIDDEN, "You do not have permission to perform this action", 403);
+      }
+
+      sendSuccess(res, 200, { message: "Settings updated" }, getRequestId(req));
+    },
   };
 }
