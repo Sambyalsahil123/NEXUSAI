@@ -7,8 +7,8 @@ import type { MembershipRepository } from "../repositories/membership.repository
 import type { OrganizationRepository } from "../repositories/organization.repository.js";
 import type { CreateOrganizationBody } from "../validators/organization.validator.js";
 
-type OrganizationStore = Pick<OrganizationRepository, "create" | "deleteById" | "findByIds">;
-type MembershipStore = Pick<MembershipRepository, "create" | "findByUserId">;
+type OrganizationStore = Pick<OrganizationRepository, "create" | "deleteById" | "findById" | "findByIds">;
+type MembershipStore = Pick<MembershipRepository, "create" | "findByUserId" | "findByUserAndOrganization">;
 
 export type PublicOrganization = {
   id: string;
@@ -32,6 +32,11 @@ export type CreatedOrganization = {
 export type UserOrganization = PublicOrganization & {
   role: Membership["role"];
   membershipStatus: Membership["status"];
+};
+
+export type TenantContext = {
+  organization: PublicOrganization;
+  membership: PublicMembership;
 };
 
 export class OrganizationService {
@@ -61,11 +66,7 @@ export class OrganizationService {
 
       return {
         organization: toPublicOrganization(organization),
-        membership: {
-          id: membership._id.toHexString(),
-          role: membership.role,
-          status: membership.status,
-        },
+        membership: toPublicMembership(membership),
       };
     } catch (error) {
       await this.removeOrganization(organization._id);
@@ -101,6 +102,29 @@ export class OrganizationService {
     });
   }
 
+  async resolveTenant(userId: string, organizationId: string): Promise<TenantContext> {
+    if (!ObjectId.isValid(userId)) {
+      throw new AppError(ErrorCodes.UNAUTHORIZED, "Invalid or expired token", 401);
+    }
+    if (!isOrganizationId(organizationId)) {
+      throw new AppError(ErrorCodes.VALIDATION_ERROR, "Organization id is invalid", 400);
+    }
+
+    const membership = await this.memberships.findByUserAndOrganization(
+      new ObjectId(userId),
+      new ObjectId(organizationId),
+    );
+    const organization = membership ? await this.organizations.findById(membership.organizationId) : null;
+    if (!membership || !organization || organization.status !== "active") {
+      throw new AppError(ErrorCodes.FORBIDDEN, "You do not have access to this organization", 403);
+    }
+
+    return {
+      organization: toPublicOrganization(organization),
+      membership: toPublicMembership(membership),
+    };
+  }
+
   private async insertOrganization(name: string, slug: string): Promise<Organization> {
     try {
       return await this.organizations.create({ name, slug });
@@ -119,6 +143,18 @@ export class OrganizationService {
       // The membership failure is the error the caller must see.
     }
   }
+}
+
+function toPublicMembership(membership: Membership): PublicMembership {
+  return {
+    id: membership._id.toHexString(),
+    role: membership.role,
+    status: membership.status,
+  };
+}
+
+function isOrganizationId(value: string): boolean {
+  return /^[a-f\d]{24}$/i.test(value);
 }
 
 function toPublicOrganization(organization: Organization): PublicOrganization {

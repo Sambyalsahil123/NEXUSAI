@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { createOrganizationController } from "../controllers/organization.controller.js";
 import { createRequireAuth } from "../middleware/auth.middleware.js";
+import { createRequireTenant } from "../middleware/tenant.middleware.js";
 import { validate } from "../middleware/validate.js";
 import type { AuthService } from "../services/auth.service.js";
 import type { OrganizationService } from "../services/organization.service.js";
@@ -19,6 +20,22 @@ export function createOrganizationRouter(authService: AuthService, organizationS
 
   router.post("/", requireAuth, validate({ body: createOrganizationBodySchema }), async (req, res) => {
     await controller.create(req, res);
+  });
+
+  return router;
+}
+
+export function createWorkspaceRouter(
+  authService: AuthService,
+  organizationService: OrganizationApi & Pick<OrganizationService, "resolveTenant">,
+): Router {
+  const router = Router();
+  const controller = createOrganizationController(organizationService);
+  const requireAuth = createRequireAuth(authService);
+  const requireTenant = createRequireTenant(organizationService);
+
+  router.get("/current", requireAuth, requireTenant, async (req, res) => {
+    await controller.current(req, res);
   });
 
   return router;

@@ -47,6 +47,9 @@ describe("POST /api/v1/auth/register", () => {
         async getUserOrganizations() {
           throw new Error("not used");
         },
+        async resolveTenant() {
+          throw new Error("not used");
+        },
       },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",

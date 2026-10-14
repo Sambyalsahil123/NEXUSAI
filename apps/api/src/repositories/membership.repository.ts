@@ -14,6 +14,10 @@ export class MembershipRepository {
     return this.collection().find({ userId }).sort({ createdAt: 1 }).toArray();
   }
 
+  async findByUserAndOrganization(userId: ObjectId, organizationId: ObjectId): Promise<Membership | null> {
+    return this.collection().findOne({ userId, organizationId, status: "active" });
+  }
+
   async create(input: NewMembershipInput): Promise<Membership> {
     const now = new Date();
     const document: Membership = {

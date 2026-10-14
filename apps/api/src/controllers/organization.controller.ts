@@ -32,5 +32,21 @@ export function createOrganizationController(organizationService: OrganizationAp
       const created = await organizationService.create(req.user.id, body.data);
       sendSuccess(res, 201, created, getRequestId(req));
     },
+
+    async current(req: Request, res: Response): Promise<void> {
+      if (!req.user) {
+        throw new AppError(ErrorCodes.UNAUTHORIZED, "Authentication required", 401);
+      }
+      if (!req.organization || !req.membership) {
+        throw new AppError(ErrorCodes.FORBIDDEN, "You do not have access to this organization", 403);
+      }
+
+      sendSuccess(
+        res,
+        200,
+        { organization: req.organization, membership: req.membership },
+        getRequestId(req),
+      );
+    },
   };
 }

@@ -9,6 +9,10 @@ export type NewOrganizationInput = {
 export class OrganizationRepository {
   constructor(private readonly db: Db) {}
 
+  async findById(id: ObjectId): Promise<Organization | null> {
+    return this.collection().findOne({ _id: id });
+  }
+
   async findByIds(ids: ObjectId[]): Promise<Organization[]> {
     if (ids.length === 0) {
       return [];

@@ -40,6 +40,9 @@ describe("OrganizationService create", () => {
           const index = organizations.findIndex((organizationId) => organizationId.equals(id));
           organizations.splice(index, 1);
         },
+        async findById() {
+          return null;
+        },
         async findByIds() {
           return [];
         },
@@ -50,6 +53,9 @@ describe("OrganizationService create", () => {
         },
         async findByUserId() {
           return [];
+        },
+        async findByUserAndOrganization() {
+          return null;
         },
       },
     );
@@ -70,6 +76,9 @@ describe("OrganizationService create", () => {
         async deleteById() {
           return undefined;
         },
+        async findById() {
+          return null;
+        },
         async findByIds() {
           return [];
         },
@@ -81,6 +90,9 @@ describe("OrganizationService create", () => {
         },
         async findByUserId() {
           return [];
+        },
+        async findByUserAndOrganization() {
+          return null;
         },
       },
     );

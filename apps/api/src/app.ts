@@ -13,7 +13,7 @@ import type { Logger } from "./utils/logger.js";
 export type AppDependencies = {
   healthService: HealthService;
   authService: AuthService;
-  organizationService: Pick<OrganizationService, "create" | "getUserOrganizations">;
+  organizationService: Pick<OrganizationService, "create" | "getUserOrganizations" | "resolveTenant">;
   logger: Logger;
   corsOrigin: string;
 };
