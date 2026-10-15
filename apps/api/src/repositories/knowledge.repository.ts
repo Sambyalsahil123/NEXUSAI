@@ -34,6 +34,22 @@ export class KnowledgeRepository {
     return document;
   }
 
+  async update(
+    organizationId: ObjectId,
+    documentId: ObjectId,
+    input: { title: string; content: string; category: KnowledgeCategory },
+  ): Promise<KnowledgeDocument | null> {
+    return this.collection().findOneAndUpdate(
+      { _id: documentId, organizationId },
+      { $set: { title: input.title, content: input.content, category: input.category, updatedAt: new Date() } },
+      { returnDocument: "after" },
+    );
+  }
+
+  async deleteById(id: ObjectId): Promise<void> {
+    await this.collection().deleteOne({ _id: id });
+  }
+
   private collection() {
     return this.db.collection<KnowledgeDocument>(KNOWLEDGE_COLLECTION);
   }

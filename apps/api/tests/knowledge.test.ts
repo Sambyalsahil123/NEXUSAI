@@ -4,11 +4,13 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { connectMongo, disconnectMongo } from "../src/db/mongo.js";
+import { ensureChunkIndexes } from "../src/models/chunk.model.js";
 import { KNOWLEDGE_COLLECTION, ensureKnowledgeIndexes } from "../src/models/knowledge.model.js";
 import { ensureMembershipIndexes } from "../src/models/membership.model.js";
 import { ensureOrganizationIndexes } from "../src/models/organization.model.js";
 import { ensureSessionIndexes } from "../src/models/session.model.js";
 import { ensureUserIndexes } from "../src/models/user.model.js";
+import { ChunkRepository } from "../src/repositories/chunk.repository.js";
 import { KnowledgeRepository } from "../src/repositories/knowledge.repository.js";
 import { MembershipRepository } from "../src/repositories/membership.repository.js";
 import { OrganizationRepository } from "../src/repositories/organization.repository.js";
@@ -34,6 +36,7 @@ describe("POST /api/v1/knowledge", () => {
     await ensureOrganizationIndexes(client.db());
     await ensureMembershipIndexes(client.db());
     await ensureKnowledgeIndexes(client.db());
+    await ensureChunkIndexes(client.db());
   }, 60_000);
 
   afterAll(async () => {
@@ -53,7 +56,7 @@ describe("POST /api/v1/knowledge", () => {
         new OrganizationRepository(client.db()),
         new MembershipRepository(client.db()),
       ),
-      knowledgeService: new KnowledgeService(new KnowledgeRepository(client.db())),
+      knowledgeService: new KnowledgeService(new KnowledgeRepository(client.db()), new ChunkRepository(client.db())),
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });
