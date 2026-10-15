@@ -135,6 +135,11 @@ describe("POST /api/v1/organizations", () => {
         new OrganizationRepository(client.db()),
         new MembershipRepository(client.db()),
       ),
+      knowledgeService: {
+        async create() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

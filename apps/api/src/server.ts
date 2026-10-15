@@ -4,17 +4,20 @@ import type { MongoClient } from "mongodb";
 import { createApp } from "./app.js";
 import { parseEnv } from "./config/env.js";
 import { connectMongo, disconnectMongo } from "./db/mongo.js";
+import { ensureKnowledgeIndexes } from "./models/knowledge.model.js";
 import { ensureMembershipIndexes } from "./models/membership.model.js";
 import { ensureOrganizationIndexes } from "./models/organization.model.js";
 import { ensureSessionIndexes } from "./models/session.model.js";
 import { ensureUserIndexes } from "./models/user.model.js";
 import { HealthRepository } from "./repositories/health.repository.js";
+import { KnowledgeRepository } from "./repositories/knowledge.repository.js";
 import { MembershipRepository } from "./repositories/membership.repository.js";
 import { OrganizationRepository } from "./repositories/organization.repository.js";
 import { SessionRepository } from "./repositories/session.repository.js";
 import { UserRepository } from "./repositories/user.repository.js";
 import { AuthService } from "./services/auth.service.js";
 import { HealthService } from "./services/health.service.js";
+import { KnowledgeService } from "./services/knowledge.service.js";
 import { OrganizationService } from "./services/organization.service.js";
 import { createLogger } from "./utils/logger.js";
 
@@ -31,6 +34,7 @@ async function main(): Promise<void> {
     await ensureSessionIndexes(client.db());
     await ensureOrganizationIndexes(client.db());
     await ensureMembershipIndexes(client.db());
+    await ensureKnowledgeIndexes(client.db());
   } catch (error) {
     logger.fatal({ err: error }, "failed to connect to MongoDB");
     process.exit(1);
@@ -46,10 +50,12 @@ async function main(): Promise<void> {
     new OrganizationRepository(client.db()),
     new MembershipRepository(client.db()),
   );
+  const knowledgeService = new KnowledgeService(new KnowledgeRepository(client.db()));
   const app = createApp({
     healthService,
     authService,
     organizationService,
+    knowledgeService,
     logger,
     corsOrigin: env.CORS_ORIGIN,
   });

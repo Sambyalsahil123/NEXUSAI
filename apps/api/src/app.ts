@@ -7,6 +7,7 @@ import { applySecurity } from "./middleware/security.js";
 import { createApiRouter } from "./routes/index.js";
 import type { AuthService } from "./services/auth.service.js";
 import type { HealthService } from "./services/health.service.js";
+import type { KnowledgeService } from "./services/knowledge.service.js";
 import type { OrganizationService } from "./services/organization.service.js";
 import type { Logger } from "./utils/logger.js";
 
@@ -14,6 +15,7 @@ export type AppDependencies = {
   healthService: HealthService;
   authService: AuthService;
   organizationService: Pick<OrganizationService, "create" | "getUserOrganizations" | "resolveTenant">;
+  knowledgeService: Pick<KnowledgeService, "create">;
   logger: Logger;
   corsOrigin: string;
 };
@@ -31,7 +33,10 @@ export function createApp(deps: AppDependencies): Express {
   applySecurity(app, deps.corsOrigin);
   app.use(express.json({ limit: "1mb" }));
 
-  app.use("/api/v1", createApiRouter(deps.healthService, deps.authService, deps.organizationService));
+  app.use(
+    "/api/v1",
+    createApiRouter(deps.healthService, deps.authService, deps.organizationService, deps.knowledgeService),
+  );
 
   app.use(notFound);
   app.use(errorHandler(deps.logger));

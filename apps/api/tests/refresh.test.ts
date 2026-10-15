@@ -49,6 +49,11 @@ describe("refresh tokens and logout", () => {
           throw new Error("not used");
         },
       },
+      knowledgeService: {
+        async create() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

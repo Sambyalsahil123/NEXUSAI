@@ -49,6 +49,11 @@ describe("GET /api/v1/workspaces/current", () => {
         new OrganizationRepository(client.db()),
         new MembershipRepository(client.db()),
       ),
+      knowledgeService: {
+        async create() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });
