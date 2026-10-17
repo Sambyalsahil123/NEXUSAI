@@ -6,6 +6,7 @@ import type { ChunkRepository } from "../repositories/chunk.repository.js";
 import type { KnowledgeRepository } from "../repositories/knowledge.repository.js";
 import type { CreateKnowledgeBody } from "../validators/knowledge.validator.js";
 import { chunkKnowledge } from "./chunking.service.js";
+import type { IEmbeddingService } from "./embedding.service.js";
 
 type KnowledgeStore = Pick<KnowledgeRepository, "create" | "update" | "deleteById">;
 type ChunkStore = Pick<ChunkRepository, "replaceForDocument" | "deleteByDocument">;
@@ -29,6 +30,7 @@ export class KnowledgeService {
   constructor(
     private readonly documents: KnowledgeStore,
     private readonly chunks: ChunkStore,
+    private readonly embeddings: IEmbeddingService,
   ) {}
 
   async create(scope: KnowledgeScope, input: CreateKnowledgeBody): Promise<PublicKnowledgeDocument> {
@@ -80,16 +82,20 @@ export class KnowledgeService {
       category: document.category,
       content: document.content,
     });
-
-    await this.chunks.replaceForDocument(
-      document.organizationId,
-      document._id,
-      drafts.map((draft) => ({
-        chunkIndex: draft.chunkIndex,
-        content: draft.content,
-        metadata: draft.metadata,
-      })),
+    const embedded = await Promise.all(
+      drafts.map(async (draft) => {
+        const embedding = await this.embeddings.generateEmbedding(draft.content);
+        return {
+          chunkIndex: draft.chunkIndex,
+          content: draft.content,
+          metadata: draft.metadata,
+          embedding,
+          isEmbedded: embedding.length > 0,
+        };
+      }),
     );
+
+    await this.chunks.replaceForDocument(document.organizationId, document._id, embedded);
   }
 }
 

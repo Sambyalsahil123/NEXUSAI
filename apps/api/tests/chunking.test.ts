@@ -7,6 +7,7 @@ import { ensureKnowledgeIndexes } from "../src/models/knowledge.model.js";
 import { ChunkRepository } from "../src/repositories/chunk.repository.js";
 import { KnowledgeRepository } from "../src/repositories/knowledge.repository.js";
 import { CHUNK_MAX_CHARS, CHUNK_OVERLAP_CHARS, chunkKnowledge } from "../src/services/chunking.service.js";
+import { EMBEDDING_DIMENSIONS, LocalEmbeddingService } from "../src/services/embedding.service.js";
 import { KnowledgeService } from "../src/services/knowledge.service.js";
 
 function sentence(index: number): string {
@@ -106,7 +107,11 @@ describe("stored knowledge chunks", () => {
 
   it("saves chunks from the parent document and replaces them when the article changes", async () => {
     const organizationId = new ObjectId();
-    const service = new KnowledgeService(new KnowledgeRepository(client.db()), new ChunkRepository(client.db()));
+    const service = new KnowledgeService(
+      new KnowledgeRepository(client.db()),
+      new ChunkRepository(client.db()),
+      new LocalEmbeddingService(),
+    );
     const chunks = new ChunkRepository(client.db());
     const created = await service.create(
       { organizationId: organizationId.toHexString(), createdBy: new ObjectId().toHexString() },
@@ -119,6 +124,9 @@ describe("stored knowledge chunks", () => {
       expect(chunk.organizationId.toHexString()).toBe(organizationId.toHexString());
       expect(chunk.documentId.toHexString()).toBe(created.id);
       expect(chunk.content.startsWith("[Category: policy | Title: Warranty]\n")).toBe(true);
+      expect(chunk.isEmbedded).toBe(true);
+      expect(chunk.embedding).toHaveLength(EMBEDDING_DIMENSIONS);
+      expect(chunk.embedding.every((value) => Number.isFinite(value))).toBe(true);
     }
 
     const updated = await service.update(organizationId.toHexString(), created.id, {
@@ -131,6 +139,9 @@ describe("stored knowledge chunks", () => {
     expect(replaced).toHaveLength(1);
     expect(replaced[0]?.organizationId.toHexString()).toBe(organizationId.toHexString());
     expect(replaced[0]?.documentId.toHexString()).toBe(created.id);
+    expect(replaced[0]?.isEmbedded).toBe(true);
+    expect(replaced[0]?.embedding).toHaveLength(EMBEDDING_DIMENSIONS);
+    expect(replaced[0]?.embedding).not.toEqual(stored[0]?.embedding);
     expect(replaced[0]?.content).toBe("[Category: faq | Title: Returns]\nReturns are accepted within seven days.");
     expect(replaced[0]?.metadata.headerContext).toBe("[Category: faq | Title: Returns]");
   });

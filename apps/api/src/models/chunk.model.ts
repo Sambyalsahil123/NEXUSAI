@@ -20,6 +20,10 @@ export type KnowledgeChunk = {
   chunkIndex: number;
   content: string;
   metadata: KnowledgeChunkMetadata;
+  /** High-dimensional vector for content. Empty until an embedding has been stored. */
+  embedding: number[];
+  /** False until embedding holds the vector for this chunk. */
+  isEmbedded: boolean;
   createdAt: Date;
 };
 

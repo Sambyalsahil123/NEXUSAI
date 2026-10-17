@@ -17,6 +17,7 @@ import { OrganizationRepository } from "../src/repositories/organization.reposit
 import { SessionRepository } from "../src/repositories/session.repository.js";
 import { UserRepository } from "../src/repositories/user.repository.js";
 import { AuthService } from "../src/services/auth.service.js";
+import { LocalEmbeddingService } from "../src/services/embedding.service.js";
 import { HealthService } from "../src/services/health.service.js";
 import { KnowledgeService } from "../src/services/knowledge.service.js";
 import { OrganizationService } from "../src/services/organization.service.js";
@@ -56,7 +57,11 @@ describe("POST /api/v1/knowledge", () => {
         new OrganizationRepository(client.db()),
         new MembershipRepository(client.db()),
       ),
-      knowledgeService: new KnowledgeService(new KnowledgeRepository(client.db()), new ChunkRepository(client.db())),
+      knowledgeService: new KnowledgeService(
+        new KnowledgeRepository(client.db()),
+        new ChunkRepository(client.db()),
+        new LocalEmbeddingService(),
+      ),
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

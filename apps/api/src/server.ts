@@ -18,6 +18,7 @@ import { OrganizationRepository } from "./repositories/organization.repository.j
 import { SessionRepository } from "./repositories/session.repository.js";
 import { UserRepository } from "./repositories/user.repository.js";
 import { AuthService } from "./services/auth.service.js";
+import { LocalEmbeddingService } from "./services/embedding.service.js";
 import { HealthService } from "./services/health.service.js";
 import { KnowledgeService } from "./services/knowledge.service.js";
 import { OrganizationService } from "./services/organization.service.js";
@@ -56,6 +57,7 @@ async function main(): Promise<void> {
   const knowledgeService = new KnowledgeService(
     new KnowledgeRepository(client.db()),
     new ChunkRepository(client.db()),
+    new LocalEmbeddingService(),
   );
   const app = createApp({
     healthService,

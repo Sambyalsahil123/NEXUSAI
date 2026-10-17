@@ -9,6 +9,8 @@ export type NewKnowledgeChunkInput = {
   chunkIndex: number;
   content: string;
   metadata: KnowledgeChunkMetadata;
+  embedding: number[];
+  isEmbedded: boolean;
 };
 
 export class ChunkRepository {
@@ -32,6 +34,8 @@ export class ChunkRepository {
       chunkIndex: chunk.chunkIndex,
       content: chunk.content,
       metadata: chunk.metadata,
+      embedding: chunk.embedding,
+      isEmbedded: chunk.isEmbedded,
       createdAt,
     }));
     await this.collection().insertMany(documents);
