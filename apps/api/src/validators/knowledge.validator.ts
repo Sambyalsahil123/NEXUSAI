@@ -15,3 +15,10 @@ export const createKnowledgeBodySchema = z.object({
 });
 
 export type CreateKnowledgeBody = z.infer<typeof createKnowledgeBodySchema>;
+
+export const searchKnowledgeBodySchema = z.object({
+  query: z.string().trim().min(1, "Query is required").max(1_000, "Query must be at most 1000 characters"),
+  limit: z.number().int().min(1).max(20).optional(),
+});
+
+export type SearchKnowledgeBody = z.infer<typeof searchKnowledgeBodySchema>;

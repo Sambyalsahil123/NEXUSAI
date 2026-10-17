@@ -43,6 +43,10 @@ export class ChunkRepository {
     return documents;
   }
 
+  async findEmbeddedByOrganization(organizationId: ObjectId): Promise<KnowledgeChunk[]> {
+    return this.collection().find({ organizationId, isEmbedded: true }).toArray();
+  }
+
   async findByDocument(organizationId: ObjectId, documentId: ObjectId): Promise<KnowledgeChunk[]> {
     return this.collection().find({ organizationId, documentId }).sort({ chunkIndex: 1 }).toArray();
   }

@@ -62,6 +62,11 @@ describe("POST /api/v1/knowledge", () => {
         new ChunkRepository(client.db()),
         new LocalEmbeddingService(),
       ),
+      retrievalService: {
+        async search() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

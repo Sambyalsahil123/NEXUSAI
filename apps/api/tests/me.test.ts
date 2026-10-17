@@ -55,6 +55,11 @@ describe("GET /api/v1/auth/me", () => {
           throw new Error("not used");
         },
       },
+      retrievalService: {
+        async search() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

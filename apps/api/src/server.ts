@@ -22,6 +22,7 @@ import { LocalEmbeddingService } from "./services/embedding.service.js";
 import { HealthService } from "./services/health.service.js";
 import { KnowledgeService } from "./services/knowledge.service.js";
 import { OrganizationService } from "./services/organization.service.js";
+import { RetrievalService } from "./services/retrieval.service.js";
 import { createLogger } from "./utils/logger.js";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -54,16 +55,16 @@ async function main(): Promise<void> {
     new OrganizationRepository(client.db()),
     new MembershipRepository(client.db()),
   );
-  const knowledgeService = new KnowledgeService(
-    new KnowledgeRepository(client.db()),
-    new ChunkRepository(client.db()),
-    new LocalEmbeddingService(),
-  );
+  const embeddings = new LocalEmbeddingService();
+  const chunkRepository = new ChunkRepository(client.db());
+  const knowledgeService = new KnowledgeService(new KnowledgeRepository(client.db()), chunkRepository, embeddings);
+  const retrievalService = new RetrievalService(chunkRepository, embeddings);
   const app = createApp({
     healthService,
     authService,
     organizationService,
     knowledgeService,
+    retrievalService,
     logger,
     corsOrigin: env.CORS_ORIGIN,
   });
