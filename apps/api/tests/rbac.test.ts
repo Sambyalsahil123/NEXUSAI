@@ -59,6 +59,11 @@ describe("PATCH /api/v1/organizations/current/settings", () => {
           throw new Error("not used");
         },
       },
+      ragService: {
+        async ask() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

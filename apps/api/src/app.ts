@@ -9,6 +9,7 @@ import type { AuthService } from "./services/auth.service.js";
 import type { HealthService } from "./services/health.service.js";
 import type { KnowledgeService } from "./services/knowledge.service.js";
 import type { OrganizationService } from "./services/organization.service.js";
+import type { RagService } from "./services/rag.service.js";
 import type { RetrievalService } from "./services/retrieval.service.js";
 import type { Logger } from "./utils/logger.js";
 
@@ -18,6 +19,7 @@ export type AppDependencies = {
   organizationService: Pick<OrganizationService, "create" | "getUserOrganizations" | "resolveTenant">;
   knowledgeService: Pick<KnowledgeService, "create">;
   retrievalService: Pick<RetrievalService, "search">;
+  ragService: Pick<RagService, "ask">;
   logger: Logger;
   corsOrigin: string;
 };
@@ -43,6 +45,7 @@ export function createApp(deps: AppDependencies): Express {
       deps.organizationService,
       deps.knowledgeService,
       deps.retrievalService,
+      deps.ragService,
     ),
   );
 

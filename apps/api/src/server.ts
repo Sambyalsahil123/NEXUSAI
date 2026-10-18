@@ -21,7 +21,9 @@ import { AuthService } from "./services/auth.service.js";
 import { LocalEmbeddingService } from "./services/embedding.service.js";
 import { HealthService } from "./services/health.service.js";
 import { KnowledgeService } from "./services/knowledge.service.js";
+import { LocalLanguageModelService } from "./services/llm.service.js";
 import { OrganizationService } from "./services/organization.service.js";
+import { RagService } from "./services/rag.service.js";
 import { RetrievalService } from "./services/retrieval.service.js";
 import { createLogger } from "./utils/logger.js";
 
@@ -59,12 +61,18 @@ async function main(): Promise<void> {
   const chunkRepository = new ChunkRepository(client.db());
   const knowledgeService = new KnowledgeService(new KnowledgeRepository(client.db()), chunkRepository, embeddings);
   const retrievalService = new RetrievalService(chunkRepository, embeddings);
+  const ragService = new RagService(
+    new KnowledgeRepository(client.db()),
+    retrievalService,
+    new LocalLanguageModelService(),
+  );
   const app = createApp({
     healthService,
     authService,
     organizationService,
     knowledgeService,
     retrievalService,
+    ragService,
     logger,
     corsOrigin: env.CORS_ORIGIN,
   });

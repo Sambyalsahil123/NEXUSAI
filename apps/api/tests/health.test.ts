@@ -80,6 +80,11 @@ describe("GET /api/v1/health", () => {
           throw new Error("not used");
         },
       },
+      ragService: {
+        async ask() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });
@@ -118,6 +123,11 @@ describe("GET /api/v1/health", () => {
       },
       retrievalService: {
         async search() {
+          throw new Error("not used");
+        },
+      },
+      ragService: {
+        async ask() {
           throw new Error("not used");
         },
       },

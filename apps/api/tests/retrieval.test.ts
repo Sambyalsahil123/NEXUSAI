@@ -71,6 +71,11 @@ describe("POST /api/v1/knowledge/search", () => {
       ),
       knowledgeService: new KnowledgeService(new KnowledgeRepository(client.db()), chunks, embeddings),
       retrievalService: new RetrievalService(chunks, embeddings),
+      ragService: {
+        async ask() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

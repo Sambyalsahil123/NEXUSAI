@@ -3,6 +3,7 @@ import type { AuthService } from "../services/auth.service.js";
 import type { HealthService } from "../services/health.service.js";
 import type { KnowledgeService } from "../services/knowledge.service.js";
 import type { OrganizationService } from "../services/organization.service.js";
+import type { RagService } from "../services/rag.service.js";
 import type { RetrievalService } from "../services/retrieval.service.js";
 import { createAuthRouter } from "./auth.routes.js";
 import { createHealthRouter } from "./health.routes.js";
@@ -15,12 +16,16 @@ export function createApiRouter(
   organizationService: Pick<OrganizationService, "create" | "getUserOrganizations" | "resolveTenant">,
   knowledgeService: Pick<KnowledgeService, "create">,
   retrievalService: Pick<RetrievalService, "search">,
+  ragService: Pick<RagService, "ask">,
 ): Router {
   const router = Router();
   router.use(createHealthRouter(healthService));
   router.use("/auth", createAuthRouter(authService));
   router.use("/organizations", createOrganizationRouter(authService, organizationService));
   router.use("/workspaces", createWorkspaceRouter(authService, organizationService));
-  router.use("/knowledge", createKnowledgeRouter(authService, organizationService, knowledgeService, retrievalService));
+  router.use(
+    "/knowledge",
+    createKnowledgeRouter(authService, organizationService, knowledgeService, retrievalService, ragService),
+  );
   return router;
 }

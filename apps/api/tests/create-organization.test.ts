@@ -145,6 +145,11 @@ describe("POST /api/v1/organizations", () => {
           throw new Error("not used");
         },
       },
+      ragService: {
+        async ask() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

@@ -46,6 +46,11 @@ export class KnowledgeRepository {
     );
   }
 
+  async findVerifiedIds(organizationId: ObjectId): Promise<ObjectId[]> {
+    const documents = await this.collection().find({ organizationId, status: "verified" }).toArray();
+    return documents.map((document) => document._id);
+  }
+
   async deleteById(id: ObjectId): Promise<void> {
     await this.collection().deleteOne({ _id: id });
   }

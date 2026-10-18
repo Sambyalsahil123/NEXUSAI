@@ -22,3 +22,9 @@ export const searchKnowledgeBodySchema = z.object({
 });
 
 export type SearchKnowledgeBody = z.infer<typeof searchKnowledgeBodySchema>;
+
+export const askKnowledgeBodySchema = z.object({
+  question: z.string().trim().min(1, "Question is required").max(1_000, "Question must be at most 1000 characters"),
+});
+
+export type AskKnowledgeBody = z.infer<typeof askKnowledgeBodySchema>;

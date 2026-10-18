@@ -23,13 +23,21 @@ export class RetrievalService {
     private readonly embeddings: IEmbeddingService,
   ) {}
 
-  async search(input: { organizationId: string; query: string; limit?: number }): Promise<RetrievedChunk[]> {
+  async search(input: {
+    organizationId: string;
+    query: string;
+    limit?: number;
+    documentIds?: string[];
+  }): Promise<RetrievedChunk[]> {
     if (!ObjectId.isValid(input.organizationId)) {
       throw new AppError(ErrorCodes.FORBIDDEN, "You do not have access to this organization", 403);
     }
 
     const queryVector = await this.embeddings.generateEmbedding(input.query);
-    const candidates = await this.chunks.findEmbeddedByOrganization(new ObjectId(input.organizationId));
+    const allowed = input.documentIds === undefined ? null : new Set(input.documentIds);
+    const candidates = (await this.chunks.findEmbeddedByOrganization(new ObjectId(input.organizationId))).filter(
+      (chunk) => allowed === null || allowed.has(chunk.documentId.toHexString()),
+    );
 
     return candidates
       .map((chunk) => ({
