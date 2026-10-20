@@ -48,6 +48,9 @@ describe("refresh tokens and logout", () => {
         async resolveTenant() {
           throw new Error("not used");
         },
+        async resolveByPublishableKey() {
+          throw new Error("not used");
+        },
       },
       knowledgeService: {
         async create() {

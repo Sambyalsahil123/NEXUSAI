@@ -49,6 +49,9 @@ describe("POST /api/v1/auth/login", () => {
         async resolveTenant() {
           throw new Error("not used");
         },
+        async resolveByPublishableKey() {
+          throw new Error("not used");
+        },
       },
       knowledgeService: {
         async create() {

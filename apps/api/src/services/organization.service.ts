@@ -2,18 +2,27 @@ import { ObjectId } from "mongodb";
 import { AppError } from "../errors/app-error.js";
 import { ErrorCodes } from "../errors/codes.js";
 import type { Membership } from "../models/membership.model.js";
-import { slugFromOrganizationName, type Organization } from "../models/organization.model.js";
+import {
+  createPublishableKey,
+  PUBLISHABLE_KEY_PATTERN,
+  slugFromOrganizationName,
+  type Organization,
+} from "../models/organization.model.js";
 import type { MembershipRepository } from "../repositories/membership.repository.js";
 import type { OrganizationRepository } from "../repositories/organization.repository.js";
 import type { CreateOrganizationBody } from "../validators/organization.validator.js";
 
-type OrganizationStore = Pick<OrganizationRepository, "create" | "deleteById" | "findById" | "findByIds">;
+type OrganizationStore = Pick<
+  OrganizationRepository,
+  "create" | "deleteById" | "findById" | "findByIds" | "findByPublishableKey"
+>;
 type MembershipStore = Pick<MembershipRepository, "create" | "findByUserId" | "findByUserAndOrganization">;
 
 export type PublicOrganization = {
   id: string;
   name: string;
   slug: string;
+  publishableKey: string;
   status: Organization["status"];
   createdAt: Date;
 };
@@ -74,6 +83,19 @@ export class OrganizationService {
     }
   }
 
+  async resolveByPublishableKey(publishableKey: string): Promise<PublicOrganization> {
+    if (!PUBLISHABLE_KEY_PATTERN.test(publishableKey)) {
+      throw invalidPublishableKey();
+    }
+
+    const organization = await this.organizations.findByPublishableKey(publishableKey);
+    if (!organization || organization.status !== "active") {
+      throw invalidPublishableKey();
+    }
+
+    return toPublicOrganization(organization);
+  }
+
   async getUserOrganizations(userId: string): Promise<UserOrganization[]> {
     if (!ObjectId.isValid(userId)) {
       throw new AppError(ErrorCodes.UNAUTHORIZED, "Invalid or expired token", 401);
@@ -126,14 +148,22 @@ export class OrganizationService {
   }
 
   private async insertOrganization(name: string, slug: string): Promise<Organization> {
-    try {
-      return await this.organizations.create({ name, slug });
-    } catch (error) {
-      if (isDuplicateKeyError(error)) {
-        throw slugTaken();
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return await this.organizations.create({ name, slug, publishableKey: createPublishableKey() });
+      } catch (error) {
+        const field = duplicateField(error);
+        if (field === "publishableKey") {
+          continue;
+        }
+        if (field === "slug" || field === "unknown") {
+          throw slugTaken();
+        }
+        throw error;
       }
-      throw error;
     }
+
+    throw new AppError(ErrorCodes.INTERNAL_ERROR, "Internal server error", 500);
   }
 
   private async removeOrganization(id: ObjectId): Promise<void> {
@@ -162,6 +192,7 @@ function toPublicOrganization(organization: Organization): PublicOrganization {
     id: organization._id.toHexString(),
     name: organization.name,
     slug: organization.slug,
+    publishableKey: organization.publishableKey,
     status: organization.status,
     createdAt: organization.createdAt,
   };
@@ -171,6 +202,24 @@ function slugTaken(): AppError {
   return new AppError(ErrorCodes.CONFLICT, "An organization with this name already exists", 409);
 }
 
-function isDuplicateKeyError(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
+function invalidPublishableKey(): AppError {
+  return new AppError(ErrorCodes.UNAUTHORIZED, "Invalid or missing publishable key", 401);
+}
+
+function duplicateField(error: unknown): "slug" | "publishableKey" | "unknown" | null {
+  if (typeof error !== "object" || error === null || !("code" in error) || error.code !== 11000) {
+    return null;
+  }
+
+  const keyPattern = "keyPattern" in error ? error.keyPattern : undefined;
+  if (typeof keyPattern !== "object" || keyPattern === null) {
+    return "unknown";
+  }
+  if ("publishableKey" in keyPattern) {
+    return "publishableKey";
+  }
+  if ("slug" in keyPattern) {
+    return "slug";
+  }
+  return "unknown";
 }

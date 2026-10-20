@@ -11,11 +11,15 @@ import { createConversationRouter } from "./conversation.routes.js";
 import { createHealthRouter } from "./health.routes.js";
 import { createKnowledgeRouter } from "./knowledge.routes.js";
 import { createOrganizationRouter, createWorkspaceRouter } from "./organization.routes.js";
+import { createPublicRouter } from "./public.routes.js";
 
 export function createApiRouter(
   healthService: HealthService,
   authService: AuthService,
-  organizationService: Pick<OrganizationService, "create" | "getUserOrganizations" | "resolveTenant">,
+  organizationService: Pick<
+    OrganizationService,
+    "create" | "getUserOrganizations" | "resolveTenant" | "resolveByPublishableKey"
+  >,
   knowledgeService: Pick<KnowledgeService, "create">,
   retrievalService: Pick<RetrievalService, "search">,
   ragService: Pick<RagService, "ask">,
@@ -31,5 +35,6 @@ export function createApiRouter(
     createKnowledgeRouter(authService, organizationService, knowledgeService, retrievalService, ragService),
   );
   router.use("/conversations", createConversationRouter(authService, organizationService, conversationService));
+  router.use("/public", createPublicRouter(organizationService, conversationService));
   return router;
 }

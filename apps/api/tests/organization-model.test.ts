@@ -35,6 +35,7 @@ describe("organization and membership models", () => {
     const doc = {
       name: "Mobile Store",
       slug: "mobile-store",
+      publishableKey: "pk_live_model_slug_key_000001",
       status: "active" as const,
       createdAt: now,
       updatedAt: now,
@@ -42,9 +43,34 @@ describe("organization and membership models", () => {
 
     await organizations.insertOne({ ...doc });
 
-    await expect(organizations.insertOne({ ...doc, name: "Another Mobile Store" })).rejects.toMatchObject({
+    await expect(
+      organizations.insertOne({
+        ...doc,
+        name: "Another Mobile Store",
+        publishableKey: "pk_live_model_slug_key_000002",
+      }),
+    ).rejects.toMatchObject({
       code: 11000,
     });
+  });
+
+  it("rejects a second organization with the same publishable key", async () => {
+    const organizations = client.db().collection(ORGANIZATIONS_COLLECTION);
+    const now = new Date();
+    const doc = {
+      name: "Key Store",
+      slug: "key-store",
+      publishableKey: "pk_live_model_shared_key_0001",
+      status: "active" as const,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await organizations.insertOne({ ...doc });
+
+    await expect(
+      organizations.insertOne({ ...doc, name: "Other Key Store", slug: "other-key-store" }),
+    ).rejects.toMatchObject({ code: 11000 });
   });
 
   it("rejects a second membership for the same user and organization", async () => {

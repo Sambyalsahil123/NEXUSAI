@@ -8,7 +8,7 @@ export function applySecurity(app: Express, corsOrigin: string): void {
   app.use(
     cors({
       origin: corsOrigin,
-      allowedHeaders: ["Content-Type", "Authorization", "x-request-id"],
+      allowedHeaders: ["Content-Type", "Authorization", "x-request-id", "x-publishable-key"],
       exposedHeaders: ["x-request-id"],
     }),
   );

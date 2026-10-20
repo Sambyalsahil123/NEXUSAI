@@ -31,6 +31,7 @@ describe("OrganizationService create", () => {
             _id: id,
             name: "Mobile Store",
             slug: "mobile-store",
+            publishableKey: "pk_live_test_key_0123456789abcd",
             status: "active",
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -45,6 +46,9 @@ describe("OrganizationService create", () => {
         },
         async findByIds() {
           return [];
+        },
+        async findByPublishableKey() {
+          return null;
         },
       },
       {
@@ -81,6 +85,9 @@ describe("OrganizationService create", () => {
         },
         async findByIds() {
           return [];
+        },
+        async findByPublishableKey() {
+          return null;
         },
       },
       {
@@ -188,6 +195,7 @@ describe("POST /api/v1/organizations", () => {
       slug: "mobile-store",
       status: "active",
     });
+    expect(response.body.data.organization.publishableKey).toMatch(/^pk_live_[A-Za-z0-9_-]{20,}$/);
     expect(response.body.data.membership).toMatchObject({ role: "owner", status: "active" });
 
     const organizationId = new ObjectId(response.body.data.organization.id as string);
@@ -195,6 +203,7 @@ describe("POST /api/v1/organizations", () => {
     const storedMembership = await client.db().collection(MEMBERSHIPS_COLLECTION).findOne({ organizationId });
 
     expect(storedOrganization?.slug).toBe("mobile-store");
+    expect(storedOrganization?.publishableKey).toBe(response.body.data.organization.publishableKey);
     expect(storedMembership?.role).toBe("owner");
     expect(storedMembership?.userId.toHexString()).toBe(userId);
   });

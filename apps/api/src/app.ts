@@ -17,7 +17,10 @@ import type { Logger } from "./utils/logger.js";
 export type AppDependencies = {
   healthService: HealthService;
   authService: AuthService;
-  organizationService: Pick<OrganizationService, "create" | "getUserOrganizations" | "resolveTenant">;
+  organizationService: Pick<
+    OrganizationService,
+    "create" | "getUserOrganizations" | "resolveTenant" | "resolveByPublishableKey"
+  >;
   knowledgeService: Pick<KnowledgeService, "create">;
   retrievalService: Pick<RetrievalService, "search">;
   ragService: Pick<RagService, "ask">;

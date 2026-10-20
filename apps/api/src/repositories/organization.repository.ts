@@ -4,10 +4,15 @@ import { ORGANIZATIONS_COLLECTION, type Organization } from "../models/organizat
 export type NewOrganizationInput = {
   name: string;
   slug: string;
+  publishableKey: string;
 };
 
 export class OrganizationRepository {
   constructor(private readonly db: Db) {}
+
+  async findByPublishableKey(publishableKey: string): Promise<Organization | null> {
+    return this.collection().findOne({ publishableKey });
+  }
 
   async findById(id: ObjectId): Promise<Organization | null> {
     return this.collection().findOne({ _id: id });
@@ -28,6 +33,7 @@ export class OrganizationRepository {
       _id: new ObjectId(),
       name: input.name,
       slug: input.slug,
+      publishableKey: input.publishableKey,
       status: "active",
       createdAt: now,
       updatedAt: now,

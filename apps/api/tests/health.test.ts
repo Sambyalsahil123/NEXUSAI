@@ -69,6 +69,9 @@ describe("GET /api/v1/health", () => {
         async resolveTenant() {
           throw new Error("not used");
         },
+        async resolveByPublishableKey() {
+          throw new Error("not used");
+        },
       },
       knowledgeService: {
         async create() {
@@ -124,6 +127,9 @@ describe("GET /api/v1/health", () => {
           throw new Error("not used");
         },
         async resolveTenant() {
+          throw new Error("not used");
+        },
+        async resolveByPublishableKey() {
           throw new Error("not used");
         },
       },
