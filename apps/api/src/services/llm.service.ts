@@ -7,6 +7,7 @@ export const INSUFFICIENT_KNOWLEDGE_REPLY =
 
 export interface ILanguageModelService {
   generateResponse(systemPrompt: string, userQuery: string): Promise<string>;
+  generateStream(systemPrompt: string, userQuery: string, onChunk: (token: string) => void): Promise<string>;
 }
 
 const STOP_WORDS = new Set([
@@ -38,28 +39,45 @@ const STOP_WORDS = new Set([
  */
 export class LocalLanguageModelService implements ILanguageModelService {
   async generateResponse(systemPrompt: string, userQuery: string): Promise<string> {
-    const context = contextOf(systemPrompt);
-    if (context.length === 0 || context === "(no context)") {
-      return INSUFFICIENT_KNOWLEDGE_REPLY;
-    }
-
-    const questionWords = [...new Set([...words(userQuery), ...words(historyOf(systemPrompt))])];
-    let bestSentence = "";
-    let bestScore = 0;
-    for (const sentence of sentences(context)) {
-      const score = questionWords.filter((word) => sentence.toLowerCase().includes(word)).length;
-      if (score > bestScore) {
-        bestScore = score;
-        bestSentence = sentence;
-      }
-    }
-
-    if (bestScore === 0) {
-      return INSUFFICIENT_KNOWLEDGE_REPLY;
-    }
-
-    return bestSentence;
+    return this.generateStream(systemPrompt, userQuery, () => undefined);
   }
+
+  async generateStream(systemPrompt: string, userQuery: string, onChunk: (token: string) => void): Promise<string> {
+    const fullText = replyFrom(systemPrompt, userQuery);
+    for (const token of streamChunks(fullText)) {
+      onChunk(token);
+    }
+    return fullText;
+  }
+}
+
+function replyFrom(systemPrompt: string, userQuery: string): string {
+  const context = contextOf(systemPrompt);
+  if (context.length === 0 || context === "(no context)") {
+    return INSUFFICIENT_KNOWLEDGE_REPLY;
+  }
+
+  const questionWords = [...new Set([...words(userQuery), ...words(historyOf(systemPrompt))])];
+  let bestSentence = "";
+  let bestScore = 0;
+  for (const sentence of sentences(context)) {
+    const score = questionWords.filter((word) => sentence.toLowerCase().includes(word)).length;
+    if (score > bestScore) {
+      bestScore = score;
+      bestSentence = sentence;
+    }
+  }
+
+  if (bestScore === 0) {
+    return INSUFFICIENT_KNOWLEDGE_REPLY;
+  }
+
+  return bestSentence;
+}
+
+/** Whitespace is its own chunk so joining the chunks reproduces the full reply. */
+function streamChunks(text: string): string[] {
+  return text.split(/(\s+)/).filter((part) => part.length > 0);
 }
 
 function historyOf(systemPrompt: string): string {

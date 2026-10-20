@@ -12,7 +12,7 @@ import {
   postMessageBodySchema,
 } from "../validators/conversation.validator.js";
 
-type ConversationApi = Pick<ConversationService, "create" | "postMessage">;
+type ConversationApi = Pick<ConversationService, "create" | "postMessage" | "streamMessage">;
 
 export function createConversationRouter(
   authService: AuthService,
@@ -35,6 +35,16 @@ export function createConversationRouter(
     validate({ params: conversationParamsSchema, body: postMessageBodySchema }),
     async (req, res) => {
       await controller.postMessage(req, res);
+    },
+  );
+
+  router.post(
+    "/:id/messages/stream",
+    requireAuth,
+    requireTenant,
+    validate({ params: conversationParamsSchema, body: postMessageBodySchema }),
+    async (req, res) => {
+      await controller.streamMessage(req, res);
     },
   );
 

@@ -10,14 +10,14 @@ import {
 import { CONVERSATION_HISTORY_LIMIT, type MessageRole } from "../models/message.model.js";
 import type { ConversationRepository } from "../repositories/conversation.repository.js";
 import type { MessageRepository } from "../repositories/message.repository.js";
-import type { RagService } from "./rag.service.js";
+import type { AnswerSource, RagService } from "./rag.service.js";
 
 const RETRIEVAL_QUERY_MAX_CHARS = 1_000;
 const TITLE_MAX_CHARS = 80;
 
 type ConversationStore = Pick<ConversationRepository, "create" | "findInOrganization" | "renameIfDefault" | "touch">;
 type MessageStore = Pick<MessageRepository, "create" | "findRecent" | "deleteById">;
-type GroundedAnswers = Pick<RagService, "answer">;
+type GroundedAnswers = Pick<RagService, "answer" | "answerStream">;
 
 export type PublicConversation = {
   id: string;
@@ -39,6 +39,19 @@ export type PostedConversationTurn = {
   conversationId: string;
   userMessage: PublicConversationMessage;
   assistantMessage: PublicConversationMessage;
+};
+
+export type StreamedConversationTurn = {
+  fullReply: string;
+  sources: AnswerSource[];
+};
+
+type OpenTurn = {
+  organizationObjectId: ObjectId;
+  conversationObjectId: ObjectId;
+  content: string;
+  history: { role: MessageRole; content: string }[];
+  retrievalQuery: string;
 };
 
 export class ConversationService {
@@ -65,6 +78,37 @@ export class ConversationService {
   }
 
   async postMessage(organizationId: string, conversationId: string, content: string): Promise<PostedConversationTurn> {
+    const turn = await this.openTurn(organizationId, conversationId, content);
+    const grounded = await this.rag.answer({
+      organizationId,
+      question: turn.content,
+      history: turn.history,
+      retrievalQuery: turn.retrievalQuery,
+    });
+    return this.saveTurn(turn, grounded.answer, grounded.sources);
+  }
+
+  async streamMessage(
+    organizationId: string,
+    conversationId: string,
+    userText: string,
+    onChunk: (token: string) => void,
+  ): Promise<StreamedConversationTurn> {
+    const turn = await this.openTurn(organizationId, conversationId, userText);
+    const grounded = await this.rag.answerStream(
+      {
+        organizationId,
+        question: turn.content,
+        history: turn.history,
+        retrievalQuery: turn.retrievalQuery,
+      },
+      onChunk,
+    );
+    await this.saveTurn(turn, grounded.answer, grounded.sources);
+    return { fullReply: grounded.answer, sources: grounded.sources };
+  }
+
+  private async openTurn(organizationId: string, conversationId: string, content: string): Promise<OpenTurn> {
     if (!ObjectId.isValid(organizationId)) {
       throw new AppError(ErrorCodes.FORBIDDEN, "You do not have access to this organization", 403);
     }
@@ -91,43 +135,50 @@ export class ConversationService {
       .filter((message) => message.role === "user")
       .map((message) => message.content)
       .join("\n");
-    const retrievalQuery = `${priorUserText}\n${content}`.trim().slice(-RETRIEVAL_QUERY_MAX_CHARS);
-    const grounded = await this.rag.answer({
-      organizationId,
-      question: content,
-      history: history.map((message) => ({ role: message.role, content: message.content })),
-      retrievalQuery,
-    });
 
+    return {
+      organizationObjectId,
+      conversationObjectId,
+      content,
+      history: history.map((message) => ({ role: message.role, content: message.content })),
+      retrievalQuery: `${priorUserText}\n${content}`.trim().slice(-RETRIEVAL_QUERY_MAX_CHARS),
+    };
+  }
+
+  private async saveTurn(turn: OpenTurn, answer: string, sources: AnswerSource[]): Promise<PostedConversationTurn> {
     const userCreatedAt = new Date();
     const userMessage = await this.messages.create({
-      organizationId: organizationObjectId,
-      conversationId: conversationObjectId,
+      organizationId: turn.organizationObjectId,
+      conversationId: turn.conversationObjectId,
       role: "user",
-      content,
+      content: turn.content,
       metadata: null,
       createdAt: userCreatedAt,
     });
 
     try {
       const assistantMessage = await this.messages.create({
-        organizationId: organizationObjectId,
-        conversationId: conversationObjectId,
+        organizationId: turn.organizationObjectId,
+        conversationId: turn.conversationObjectId,
         role: "assistant",
-        content: grounded.answer,
-        metadata: { sources: grounded.sources },
+        content: answer,
+        metadata: { sources },
         createdAt: new Date(userCreatedAt.getTime() + 1),
       });
-      await this.conversations.renameIfDefault(organizationObjectId, conversationObjectId, titleFrom(content));
-      await this.conversations.touch(organizationObjectId, conversationObjectId, assistantMessage.createdAt);
+      await this.conversations.renameIfDefault(
+        turn.organizationObjectId,
+        turn.conversationObjectId,
+        titleFrom(turn.content),
+      );
+      await this.conversations.touch(turn.organizationObjectId, turn.conversationObjectId, assistantMessage.createdAt);
 
       return {
-        conversationId,
+        conversationId: turn.conversationObjectId.toHexString(),
         userMessage: toPublicMessage(userMessage),
         assistantMessage: toPublicMessage(assistantMessage),
       };
     } catch (error) {
-      await this.messages.deleteById(organizationObjectId, userMessage._id);
+      await this.messages.deleteById(turn.organizationObjectId, userMessage._id);
       throw error;
     }
   }

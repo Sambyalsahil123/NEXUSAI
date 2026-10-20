@@ -202,4 +202,120 @@ describe("conversation sessions", () => {
       .countDocuments({ organizationId: new ObjectId(otherOrganizationId) });
     expect(leaked).toBe(0);
   });
+
+  it("streams the reply as server-sent events and stores the full turn", async () => {
+    const owner = await register("conversation-stream@mobilestore.test");
+    const organizationId = await createOrganization(owner.accessToken, "Stream Mobile Store");
+    const documentId = await createVerifiedArticle(owner.accessToken, organizationId);
+    const created = await postConversation(owner.accessToken, organizationId);
+    const conversationId = created.body.data.id as string;
+
+    const response = await request(app())
+      .post(`/api/v1/conversations/${conversationId}/messages/stream`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .set("x-organization-id", organizationId)
+      .send({ content: "What warranty do Alpha phones include?" });
+
+    expect(response.status).toBe(200);
+    expect(response.headers["content-type"]).toContain("text/event-stream");
+    expect(response.headers["cache-control"]).toContain("no-cache");
+    expect(response.headers.connection).toBe("keep-alive");
+
+    const events = parseSse(response.text);
+    const tokens = events.filter((event) => event.type === "token");
+    expect(tokens.length).toBeGreaterThan(1);
+    for (const event of events) {
+      expect(event.type === "token" || event.type === "sources" || event.type === "done").toBe(true);
+    }
+    const reply = tokens.map((event) => event.content ?? "").join("");
+    expect(reply).toContain(WARRANTY);
+
+    const sources = events.find((event) => event.type === "sources");
+    expect(sources?.sources?.[0]).toMatchObject({ documentId, title: "Warranty" });
+    expect(events.at(-1)).toEqual({ type: "done" });
+
+    const stored = await client
+      .db()
+      .collection(MESSAGES_COLLECTION)
+      .find({ conversationId: new ObjectId(conversationId) })
+      .sort({ createdAt: 1 })
+      .toArray();
+    expect(stored.map((message) => message.role)).toEqual(["user", "assistant"]);
+    expect(stored[1]?.content).toBe(reply);
+    expect(stored[1]?.metadata).toMatchObject({ sources: [{ documentId, title: "Warranty" }] });
+
+    const followUp = await postMessage(owner.accessToken, organizationId, conversationId, "How long does that last?");
+    expect(followUp.status).toBe(200);
+    expect(followUp.body.data.assistantMessage.content).toContain(WARRANTY);
+  });
+
+  it("returns 404 when streaming another organization's conversation", async () => {
+    const owner = await register("conversation-stream-a@mobilestore.test");
+    const other = await register("conversation-stream-b@mobilestore.test");
+    const organizationId = await createOrganization(owner.accessToken, "Stream Tenant A");
+    const otherOrganizationId = await createOrganization(other.accessToken, "Stream Tenant B");
+    await createVerifiedArticle(owner.accessToken, organizationId);
+    const created = await postConversation(owner.accessToken, organizationId);
+    const conversationId = created.body.data.id as string;
+
+    const response = await request(app())
+      .post(`/api/v1/conversations/${conversationId}/messages/stream`)
+      .set("Authorization", `Bearer ${other.accessToken}`)
+      .set("x-organization-id", otherOrganizationId)
+      .send({ content: "What warranty do Alpha phones include?" });
+
+    expect(response.status).toBe(404);
+    expect(response.headers["content-type"] ?? "").not.toContain("text/event-stream");
+    expect(response.body.error.code).toBe("NOT_FOUND");
+    expect(response.body.error.message).toBe("Conversation not found");
+
+    const leaked = await client
+      .db()
+      .collection(MESSAGES_COLLECTION)
+      .countDocuments({ organizationId: new ObjectId(otherOrganizationId) });
+    expect(leaked).toBe(0);
+  });
+
+  it("does not store a turn when the stream stops before the reply finishes", async () => {
+    const owner = await register("conversation-abort@mobilestore.test");
+    const organizationId = await createOrganization(owner.accessToken, "Abort Mobile Store");
+    await createVerifiedArticle(owner.accessToken, organizationId);
+    const created = await postConversation(owner.accessToken, organizationId);
+    const conversationId = created.body.data.id as string;
+
+    const embeddings = new LocalEmbeddingService();
+    const chunks = new ChunkRepository(client.db());
+    const documents = new KnowledgeRepository(client.db());
+    const service = new ConversationService(
+      new ConversationRepository(client.db()),
+      new MessageRepository(client.db()),
+      new RagService(documents, new RetrievalService(chunks, embeddings), new LocalLanguageModelService()),
+    );
+
+    await expect(
+      service.streamMessage(organizationId, conversationId, "What warranty do Alpha phones include?", () => {
+        throw new Error("client disconnected");
+      }),
+    ).rejects.toThrow("client disconnected");
+
+    const stored = await client
+      .db()
+      .collection(MESSAGES_COLLECTION)
+      .countDocuments({ conversationId: new ObjectId(conversationId) });
+    expect(stored).toBe(0);
+  });
 });
+
+type StreamEvent = {
+  type: string;
+  content?: string;
+  sources?: { documentId: string; title: string; score: number }[];
+};
+
+function parseSse(body: string): StreamEvent[] {
+  return body
+    .split("\n\n")
+    .map((block) => block.trim())
+    .filter((block) => block.startsWith("data:"))
+    .map((block) => JSON.parse(block.slice("data:".length).trim()) as StreamEvent);
+}

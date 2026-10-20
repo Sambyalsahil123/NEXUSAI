@@ -72,6 +72,9 @@ describe("GET /api/v1/auth/me", () => {
         async postMessage() {
           throw new Error("not used");
         },
+        async streamMessage() {
+          throw new Error("not used");
+        },
       },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",

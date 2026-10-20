@@ -19,6 +19,14 @@ export function errorHandler(logger: Logger) {
   return (error: unknown, req: Request, res: Response, _next: NextFunction): void => {
     const requestId = getRequestId(req);
 
+    if (res.headersSent) {
+      logger.error({ err: error, requestId }, "error after response started");
+      if (!res.writableEnded) {
+        res.end();
+      }
+      return;
+    }
+
     if (error instanceof AppError) {
       if (error.statusCode >= 500) {
         logger.error({ err: error, requestId }, error.message);

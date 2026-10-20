@@ -21,7 +21,7 @@ export type AppDependencies = {
   knowledgeService: Pick<KnowledgeService, "create">;
   retrievalService: Pick<RetrievalService, "search">;
   ragService: Pick<RagService, "ask">;
-  conversationService: Pick<ConversationService, "create" | "postMessage">;
+  conversationService: Pick<ConversationService, "create" | "postMessage" | "streamMessage">;
   logger: Logger;
   corsOrigin: string;
 };

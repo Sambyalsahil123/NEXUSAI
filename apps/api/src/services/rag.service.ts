@@ -35,12 +35,19 @@ export class RagService {
     return this.answer({ organizationId, question });
   }
 
-  async answer(input: {
-    organizationId: string;
-    question: string;
-    history?: PromptMessage[];
-    retrievalQuery?: string;
-  }): Promise<GroundedAnswer> {
+  async answer(input: GroundedAnswerInput): Promise<GroundedAnswer> {
+    const prepared = await this.prepare(input);
+    const answer = await this.languageModel.generateResponse(prepared.prompt, input.question);
+    return { answer, sources: prepared.sources };
+  }
+
+  async answerStream(input: GroundedAnswerInput, onChunk: (token: string) => void): Promise<GroundedAnswer> {
+    const prepared = await this.prepare(input);
+    const answer = await this.languageModel.generateStream(prepared.prompt, input.question, onChunk);
+    return { answer, sources: prepared.sources };
+  }
+
+  private async prepare(input: GroundedAnswerInput): Promise<{ prompt: string; sources: AnswerSource[] }> {
     if (!ObjectId.isValid(input.organizationId)) {
       throw new AppError(ErrorCodes.FORBIDDEN, "You do not have access to this organization", 403);
     }
@@ -55,10 +62,9 @@ export class RagService {
             query: input.retrievalQuery ?? input.question,
             documentIds: verifiedIds.map((id) => id.toHexString()),
           });
-    const answer = await this.languageModel.generateResponse(groundedSystemPrompt(chunks, history), input.question);
 
     return {
-      answer,
+      prompt: groundedSystemPrompt(chunks, history),
       sources: chunks.map((chunk) => ({
         documentId: chunk.documentId,
         title: chunk.metadata.title,
@@ -67,6 +73,13 @@ export class RagService {
     };
   }
 }
+
+type GroundedAnswerInput = {
+  organizationId: string;
+  question: string;
+  history?: PromptMessage[];
+  retrievalQuery?: string;
+};
 
 export function groundedSystemPrompt(chunks: RetrievedChunk[], history: PromptMessage[] = []): string {
   const context =

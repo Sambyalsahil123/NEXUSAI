@@ -157,6 +157,9 @@ describe("POST /api/v1/organizations", () => {
         async postMessage() {
           throw new Error("not used");
         },
+        async streamMessage() {
+          throw new Error("not used");
+        },
       },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
