@@ -65,6 +65,14 @@ describe("POST /api/v1/auth/login", () => {
           throw new Error("not used");
         },
       },
+      conversationService: {
+        async create() {
+          throw new Error("not used");
+        },
+        async postMessage() {
+          throw new Error("not used");
+        },
+      },
       logger: createLogger("silent"),
       corsOrigin: "http://localhost:3000",
     });

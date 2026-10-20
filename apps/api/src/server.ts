@@ -5,19 +5,24 @@ import { createApp } from "./app.js";
 import { parseEnv } from "./config/env.js";
 import { connectMongo, disconnectMongo } from "./db/mongo.js";
 import { ensureChunkIndexes } from "./models/chunk.model.js";
+import { ensureConversationIndexes } from "./models/conversation.model.js";
 import { ensureKnowledgeIndexes } from "./models/knowledge.model.js";
 import { ensureMembershipIndexes } from "./models/membership.model.js";
+import { ensureMessageIndexes } from "./models/message.model.js";
 import { ensureOrganizationIndexes } from "./models/organization.model.js";
 import { ensureSessionIndexes } from "./models/session.model.js";
 import { ensureUserIndexes } from "./models/user.model.js";
 import { ChunkRepository } from "./repositories/chunk.repository.js";
+import { ConversationRepository } from "./repositories/conversation.repository.js";
 import { HealthRepository } from "./repositories/health.repository.js";
 import { KnowledgeRepository } from "./repositories/knowledge.repository.js";
 import { MembershipRepository } from "./repositories/membership.repository.js";
+import { MessageRepository } from "./repositories/message.repository.js";
 import { OrganizationRepository } from "./repositories/organization.repository.js";
 import { SessionRepository } from "./repositories/session.repository.js";
 import { UserRepository } from "./repositories/user.repository.js";
 import { AuthService } from "./services/auth.service.js";
+import { ConversationService } from "./services/conversation.service.js";
 import { LocalEmbeddingService } from "./services/embedding.service.js";
 import { HealthService } from "./services/health.service.js";
 import { KnowledgeService } from "./services/knowledge.service.js";
@@ -42,6 +47,8 @@ async function main(): Promise<void> {
     await ensureMembershipIndexes(client.db());
     await ensureKnowledgeIndexes(client.db());
     await ensureChunkIndexes(client.db());
+    await ensureConversationIndexes(client.db());
+    await ensureMessageIndexes(client.db());
   } catch (error) {
     logger.fatal({ err: error }, "failed to connect to MongoDB");
     process.exit(1);
@@ -66,6 +73,11 @@ async function main(): Promise<void> {
     retrievalService,
     new LocalLanguageModelService(),
   );
+  const conversationService = new ConversationService(
+    new ConversationRepository(client.db()),
+    new MessageRepository(client.db()),
+    ragService,
+  );
   const app = createApp({
     healthService,
     authService,
@@ -73,6 +85,7 @@ async function main(): Promise<void> {
     knowledgeService,
     retrievalService,
     ragService,
+    conversationService,
     logger,
     corsOrigin: env.CORS_ORIGIN,
   });

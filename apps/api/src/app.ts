@@ -6,6 +6,7 @@ import { requestId } from "./middleware/request-id.js";
 import { applySecurity } from "./middleware/security.js";
 import { createApiRouter } from "./routes/index.js";
 import type { AuthService } from "./services/auth.service.js";
+import type { ConversationService } from "./services/conversation.service.js";
 import type { HealthService } from "./services/health.service.js";
 import type { KnowledgeService } from "./services/knowledge.service.js";
 import type { OrganizationService } from "./services/organization.service.js";
@@ -20,6 +21,7 @@ export type AppDependencies = {
   knowledgeService: Pick<KnowledgeService, "create">;
   retrievalService: Pick<RetrievalService, "search">;
   ragService: Pick<RagService, "ask">;
+  conversationService: Pick<ConversationService, "create" | "postMessage">;
   logger: Logger;
   corsOrigin: string;
 };
@@ -46,6 +48,7 @@ export function createApp(deps: AppDependencies): Express {
       deps.knowledgeService,
       deps.retrievalService,
       deps.ragService,
+      deps.conversationService,
     ),
   );
 

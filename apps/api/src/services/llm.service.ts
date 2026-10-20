@@ -43,7 +43,7 @@ export class LocalLanguageModelService implements ILanguageModelService {
       return INSUFFICIENT_KNOWLEDGE_REPLY;
     }
 
-    const questionWords = words(userQuery);
+    const questionWords = [...new Set([...words(userQuery), ...words(historyOf(systemPrompt))])];
     let bestSentence = "";
     let bestScore = 0;
     for (const sentence of sentences(context)) {
@@ -60,6 +60,21 @@ export class LocalLanguageModelService implements ILanguageModelService {
 
     return bestSentence;
   }
+}
+
+function historyOf(systemPrompt: string): string {
+  const marker = "History:\n";
+  const start = systemPrompt.lastIndexOf(marker);
+  if (start === -1) {
+    return "";
+  }
+  const rest = systemPrompt.slice(start + marker.length);
+  const contextAt = rest.indexOf("\nContext:\n");
+  const history = (contextAt === -1 ? rest : rest.slice(0, contextAt)).trim();
+  if (history === "(no history)") {
+    return "";
+  }
+  return history;
 }
 
 function contextOf(systemPrompt: string): string {
