@@ -36,7 +36,8 @@ export class LocalEmbeddingService implements IEmbeddingService {
   }
 }
 
-function unitVector(vector: number[]): number[] {
+/** Scale a vector to length 1 so cosine similarity matches a dot product. */
+export function unitVector(vector: number[]): number[] {
   const magnitude = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
   if (magnitude === 0) {
     return vector;

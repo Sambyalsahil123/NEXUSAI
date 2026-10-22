@@ -21,12 +21,11 @@ import { MessageRepository } from "./repositories/message.repository.js";
 import { OrganizationRepository } from "./repositories/organization.repository.js";
 import { SessionRepository } from "./repositories/session.repository.js";
 import { UserRepository } from "./repositories/user.repository.js";
+import { createAiProviders } from "./services/ai-provider.factory.js";
 import { AuthService } from "./services/auth.service.js";
 import { ConversationService } from "./services/conversation.service.js";
-import { LocalEmbeddingService } from "./services/embedding.service.js";
 import { HealthService } from "./services/health.service.js";
 import { KnowledgeService } from "./services/knowledge.service.js";
-import { LocalLanguageModelService } from "./services/llm.service.js";
 import { OrganizationService } from "./services/organization.service.js";
 import { RagService } from "./services/rag.service.js";
 import { RetrievalService } from "./services/retrieval.service.js";
@@ -64,15 +63,12 @@ async function main(): Promise<void> {
     new OrganizationRepository(client.db()),
     new MembershipRepository(client.db()),
   );
-  const embeddings = new LocalEmbeddingService();
+  const { embeddings, languageModel } = createAiProviders(env);
+  logger.info({ provider: env.AI_PROVIDER }, "ai provider ready");
   const chunkRepository = new ChunkRepository(client.db());
   const knowledgeService = new KnowledgeService(new KnowledgeRepository(client.db()), chunkRepository, embeddings);
   const retrievalService = new RetrievalService(chunkRepository, embeddings);
-  const ragService = new RagService(
-    new KnowledgeRepository(client.db()),
-    retrievalService,
-    new LocalLanguageModelService(),
-  );
+  const ragService = new RagService(new KnowledgeRepository(client.db()), retrievalService, languageModel);
   const conversationService = new ConversationService(
     new ConversationRepository(client.db()),
     new MessageRepository(client.db()),
